@@ -82,7 +82,7 @@ ma_process <- ts(ma.2[3:1000])
 plot(ma_process)
 acf(ma_process, type = "correlation")
 #note from the correlogram that the r dies out at the degree of the MA
-#for an MA, autcorrelation coefficients will be significant until the point of the MA degree/order; at q=order+1, r=0
+#for an MA, autocorrelation coefficients will be significant until the point of the MA degree/order; at q=order+1, r=0
 
 
 

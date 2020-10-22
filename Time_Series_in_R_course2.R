@@ -41,6 +41,7 @@ acf(purely_random_process, type = "correlation")
 rw <- ts(cumsum(rnorm(1000)))
 plot(rw)
 acf(rw, lag.max = 100 , type = "correlation")
+#putting the command above fully in between "()" will print out all the coefficients
 
 #Another way to simulate 1000 data points at random walk, fixing the starting point at 0
 rw <- c()
@@ -80,6 +81,9 @@ ma_process <- ts(ma.2[3:1000])
 #plot and correlogram-it-out
 plot(ma_process)
 acf(ma_process, type = "correlation")
+#note from the correlogram that the r dies out at the degree of the MA
+#for an MA, autcorrelation coefficients will be significant until the point of the MA degree/order; at q=order+1, r=0
+
 
 
 

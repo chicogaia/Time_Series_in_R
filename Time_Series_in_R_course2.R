@@ -750,7 +750,7 @@ exp(fcst$pred) #Number of passengers
 
 library(forecast)
 library(astsa)
-
+data <- AirPassengers
 data.hw <- HoltWinters(data)
 data.hw.fcst <- forecast(data.hw)
 #The function forecast() already recognizes that this is a Holt-Winters model, becaude it was built with HoltWinters()
@@ -768,7 +768,6 @@ ggplot(compare) +
         geom_line(aes(month, with.SARIMA, colour = "blue")) +
         geom_line(aes(month, with.HW, colour = "red")) +
         labs(x = "Month" , y = "Number of passengers" , colour = "Method: blue = SARIMA | red = HW")
-
 
 
 

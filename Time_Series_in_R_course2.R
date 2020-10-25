@@ -637,6 +637,137 @@ plot.ts(c(suv,exp(a$pred)), main='Monthly sales + Forecast', ylab='', col='blue'
 
 
 
+## FORECASTING WITH SIMPLE EXPONENTIAL SMOOTHING (SES)
+
+rain.data <- scan("http://robjhyndman.com/tsdldata/hurst/precip1.dat",skip=1)
+rain.ts <- ts(rain.data, start=c(1813))
+
+par( mfrow=c(1,2) )
+hist(rain.data, main="Annual London Rainfall 1813-1912",
+     xlab="rainfall in inches")
+qqnorm(rain.data,main="Normal Plot of London Rainfall")
+qqline(rain.data)
+
+
+plot.ts(rain.ts, main="Annual London Rainfall 1813-1912",
+        xlab="year", ylab="rainfall in inches")
+acf(rain.ts, type = "correlation", main="ACF: London Rainfall")
+acf(rain.ts, type = "partial", main="PACF: London Rainfall")
+
+#Our ACF charts are not very helpful right now: we don't see any significant correlations appear
+#Even auto.arima() kind of gives up on us
+
+library(forecast)
+auto.arima(rain.ts)
+
+#It gives us the model ARIMA(0,0,0) and says we should move forward with the average alone.
+
+#We can move to the Holt-Winters methos (see pdf "Introduction to Forecast_SSE" in the folder for details)
+
+HoltWinters(rain.ts, beta=FALSE, gamma=FALSE)
+#Here, we called a Holt-Winters without trend and without seasonal component
+#THe alpha given by this method is the one that minimizes SSE.
+
+#The component alpha will tell us how far away in the past we are looking to consider the forecasts for future values
+#The larger the alpha (closer to 1), the heavier the weight for more recent values;
+#For alpha =1, X(t+1) = X(t); for alpha=1, we would be predicting that the next value in the time-series will just be
+#the same as thje last value.
+#The smaller the alpha, the further in the past we are considering to predict future values.
+
+#Conclusion: we can build a forecast by taking a weighted average of past values,
+#with weights given corresponding to the geometric series (i.e. exponentially decreasing).
+#This gives a forecasting method called Simple Exponential Smoothing or SES.
+#This method gives greater weight to those values in the series closer to the forecast, and
+#lesser weight to terms further in the past.
+
+#While SES this is not a bad approach, it is certainly limited and doesn’t include some other factors
+#which may be driving your system. We would like to build on this approach but also include
+#seasonal and trend effects.
+
+#The Holt-Winters method with alpha, beta and gamma, also called triple exponential smoothing, does just that.
+#alpha: levels
+#beta: trend
+#gamma: seasonality
+
+#Pros of this method:
+#low data storage requirements
+#easily automated
+#adapts to changes in trends and seasonal patterns: slow-downs or speed-ups in demand, or changes in consumer beahviour
+#may all be accomodated as new data comes in.
+
+
+## Let us see another example
+
+data <- AirPassengers
+plot(data)
+
+#ARIMA Approach
+
+#We observe upwards trend and a seasonality, as well as increasing variance as we move to more recent times
+
+#Remember: log-transforming the data should rid us the increasing variance
+data.log <- log(data)
+plot(data.log)
+
+#Still not stationary;
+#We may differece it to detrend
+
+data.log.diff1 <- diff(log(data))
+plot(data.log.diff1)
+
+#Seems stationary now.
+
+#Then we may analyze the autocorrelations:
+library(astsa)
+acf2(data.log.diff1)
+#ACF suggests an MA process with q=1 and Q=1
+#PACF suggest an AR process with p=1 and P=1
+#And seasonality S=12
+
+#Let us see what the calculation tell us
+auto.arima(data.log)
+
+#The suggest model is SARIMA(0,1,1,0,1,1)_12
+model<- arima(data.log, order = c(0,1,1), seasonal = list(order=c(0,1,1), period=12))
+autoplot(forecast(model))
+forecast(model)
+
+#Let us analyze the residuals:
+sarima(data, 0,1,1,0,1,1,12)
+
+#We may build the forecast and plot it directly at one go with the function sarima.for() from "astsa" package
+fcst <- sarima.for(data.log,24,0,1,1,0,1,1,12)
+
+#We are interested in the forecast in number of passangers, not log:
+plot.ts(c(data,exp(fcst$pred)), main='Monthly sales + Forecast', ylab='Passengers', lwd=3)
+
+#THe forecasted number of passengers may retrieved from:
+fcst$pred #log
+exp(fcst$pred) #Number of passengers
+
+
+#HOLT-WINTERS APPROACH
+
+library(forecast)
+library(astsa)
+
+data.hw <- HoltWinters(data)
+data.hw.fcst <- forecast(data.hw)
+#The function forecast() already recognizes that this is a Holt-Winters model, becaude it was built with HoltWinters()
+autoplot(data.hw.fcst)
+
+#THe forecasted number of passengers may retrieved from:
+data.hw.fcst$mean #Number of passengers
+
+#WE MAY COMPARE THE PREDICTIONS FROM BOTH MODELS
+compare <- data.frame("month" = c(1:24) , "with SARIMA" = exp(fcst$pred) , "with HW" = data.hw.fcst$mean)
+
+library(ggplot2)
+
+ggplot(compare) +
+        geom_line(aes(month, with.SARIMA, colour = "blue")) +
+        geom_line(aes(month, with.HW, colour = "red")) +
+        labs(x = "Month" , y = "Number of passengers" , colour = "Method: blue = SARIMA | red = HW")
 
 
 
